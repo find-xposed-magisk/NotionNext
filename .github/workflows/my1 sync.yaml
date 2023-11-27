@@ -117,10 +117,11 @@ jobs:
           echo "assets_count is: $assets_count"
           if [[ "$assets_count" == '0' ]]; then
             echo "步骤3：在上游仓库的发布版本中未找到资源。"
-            echo "'skip=true' >> $GITHUB_ENV"
+            echo "'skip_download=true' >> $GITHUB_ENV"
           else
             echo "步骤4：在上游仓库的发布版本中找到了资源。"
-            echo "'skip=false' >> $GITHUB_ENV"
+            echo "'skip_download=false' >> $GITHUB_ENV"
+            echo "没有资源无资源"
           fi
         fi
   
@@ -148,7 +149,6 @@ jobs:
               sleep 10
             fi
           done
-          echo "无版本可发"
         fi
       
     - name: Create Release
@@ -166,7 +166,7 @@ jobs:
         prerelease: false
 
     - name: download-update
-      if: ${{ env.skip == 'false' }}
+      if: ${{ env.skip_download == 'false' }}
       run: |
         echo "步骤9：开始下载和上传发布资源。"
         assets=$(curl --silent "${{ env.assets_url }}")
