@@ -37,16 +37,16 @@ export default function MobileCatalog({ post }) {
 
   return (
     <div id='proxio-mobile-catalog'>
-      {/* 浮动入口：抽屉展开时原地变为关闭按钮，位置不变不跳动 */}
+      {/* 浮动入口：样式与回顶按钮保持一致（方形圆角），抽屉展开时原位变为关闭按钮 */}
       <button
         type='button'
         aria-label={drawerOpen ? 'Close catalog' : 'Open catalog'}
         onClick={() => setDrawerOpen(!drawerOpen)}
-        className='fixed bottom-32 right-8 z-[1000] flex h-11 w-11 rotate-0 items-center justify-center rounded-full bg-primary text-white shadow-lg transition-all duration-300 ease-in-out hover:scale-105 dark:bg-gray-700 xl:hidden'>
+        className='fixed bottom-28 right-8 z-[1000] flex h-10 w-10 items-center justify-center rounded-md bg-primary text-white shadow-md transition duration-300 ease-in-out hover:bg-dark xl:hidden'>
         <i
           className={
-            'fas text-base transition-transform duration-300 ' +
-            (drawerOpen ? 'fa-times rotate-90' : 'fa-list-ul')
+            'fas block text-[15px] leading-none ' +
+            (drawerOpen ? 'fa-times' : 'fa-list-ul')
           }
         />
       </button>
@@ -66,7 +66,7 @@ export default function MobileCatalog({ post }) {
       <div
         className={
           (drawerOpen ? 'translate-x-0' : 'translate-x-[calc(100%+1.5rem)]') +
-          ' fixed bottom-[11.5rem] right-6 z-[999] w-64 rounded-2xl border border-gray-100 bg-white shadow-2xl transition-transform duration-300 ease-out dark:border-gray-700 dark:bg-gray-800 xl:hidden'
+          ' fixed bottom-[10.5rem] right-6 z-[999] w-64 rounded-2xl border border-gray-100 bg-white shadow-2xl transition-transform duration-300 ease-out dark:border-gray-700 dark:bg-gray-800 xl:hidden'
         }>
         {/* 面板头 */}
         <div className='flex items-center justify-between border-b border-gray-100 px-4 py-3 dark:border-gray-700'>
