@@ -186,12 +186,12 @@ const LayoutSlug = props => {
                 <div className='flex flex-wrap justify-center -mx-4'>
                     <div
                         id='container-inner'
-                        className='w-full p-4'
-                        style={
-                            siteConfig('PROXIO_POST_CATALOG_ENABLE', false, CONFIG) &&
+                        className={
+                            'w-full p-4' +
+                            (siteConfig('PROXIO_POST_CATALOG_ENABLE', false, CONFIG) &&
                             post?.toc?.length > 0
-                                ? { width: 'calc(100% - 16rem)' }
-                                : undefined
+                                ? ' xl:w-[calc(100%-16rem)]'
+                                : '')
                         }>
                         {lock && <ArticleLock validPassword={validPassword} />}
 
