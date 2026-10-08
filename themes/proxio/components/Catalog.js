@@ -1,0 +1,151 @@
+import { useGlobal } from '@/lib/global'
+import { siteConfig } from '@/lib/config'
+import throttle from 'lodash.throttle'
+import { uuidToId } from 'notion-utils'
+import { useEffect, useRef, useState, useMemo } from 'react'
+import CONFIG from '../config'
+
+/**
+ * 目录导航组件 — Proxio 主题侧边栏目录
+ *
+ * 行为：
+ * 1. 默认显示 L1 + L2 目录项
+ * 2. 滚动到某个标题时高亮对应目录项
+ * 3. 可配置 PROXIO_POST_CATALOG_SHOW_LEVEL3 控制是否显示第三级
+ * 4. 点击目录标题回到文章顶部
+ */
+const Catalog = ({ post }) => {
+  const { locale } = useGlobal()
+  const tRef = useRef(null)
+  const clickLockRef = useRef(false)
+  const [activeSection, setActiveSection] = useState(null)
+  const activeSectionRef = useRef(activeSection)
+
+  useEffect(() => {
+    activeSectionRef.current = activeSection
+  }, [activeSection])
+
+  // 配置
+  const showLevel3 = siteConfig('PROXIO_POST_CATALOG_SHOW_LEVEL3', false, CONFIG)
+  const scrollBehavior = siteConfig('PROXIO_POST_CATALOG_SCROLL_BEHAVIOR', 'instant', CONFIG)
+
+  // 最大深度：如果不显示 L3 则只显示到 L2
+  const maxDepth = showLevel3 ? 3 : 2
+
+  // 过滤 TOC
+  const filteredToc = useMemo(() => {
+    if (!post?.toc) return []
+    return post.toc.filter(item => item.indentLevel < maxDepth)
+  }, [post?.toc, maxDepth])
+
+  // 滚动监听，同步高亮
+  useEffect(() => {
+    if (!post || !filteredToc || filteredToc.length < 1) return
+
+    const throttleMs = 200
+    const actionSectionScrollSpy = throttle(() => {
+      if (clickLockRef.current) return
+      const sections = document.getElementsByClassName('notion-h')
+      if (!sections || sections.length === 0) return
+
+      let prevBBox = null
+      let currentSectionId = null
+      for (let i = 0; i < sections.length; ++i) {
+        const section = sections[i]
+        if (!section || !(section instanceof Element)) continue
+        const bbox = section.getBoundingClientRect()
+        const prevHeight = prevBBox ? bbox.top - prevBBox.bottom : 0
+        const offset = Math.max(150, prevHeight / 4)
+        if (bbox.top - offset < 0) {
+          currentSectionId = section.getAttribute('data-id')
+          prevBBox = bbox
+          continue
+        }
+        break
+      }
+      if (!currentSectionId && sections.length > 0) {
+        currentSectionId = sections[0].getAttribute('data-id')
+      }
+
+      if (currentSectionId !== activeSectionRef.current) {
+        setActiveSection(currentSectionId)
+        const index = filteredToc.findIndex(
+          t => uuidToId(t.id) === currentSectionId
+        )
+        if (index !== -1 && tRef?.current) {
+          const itemHeight = 28
+          const containerHeight = tRef.current.clientHeight
+          const scrollTop = Math.max(
+            0,
+            itemHeight * index - containerHeight / 2 + itemHeight / 2
+          )
+          tRef.current.scrollTo({ top: scrollTop, behavior: 'smooth' })
+        }
+      }
+    }, throttleMs)
+
+    window.addEventListener('scroll', actionSectionScrollSpy, { passive: true })
+    setTimeout(() => actionSectionScrollSpy(), 300)
+    return () => {
+      window.removeEventListener('scroll', actionSectionScrollSpy)
+      actionSectionScrollSpy.cancel?.()
+    }
+  }, [post, filteredToc])
+
+  // 无目录不渲染
+  if (!filteredToc || filteredToc.length === 0) {
+    return null
+  }
+
+  /**
+   * 点击目录项滚动到对应标题
+   */
+  const scrollToSection = item => {
+    const id = uuidToId(item.id)
+    clickLockRef.current = true
+    setActiveSection(id)
+    const target = document.querySelector(`[data-id="${id}"]`)
+    if (target) {
+      target.scrollIntoView({ block: 'start', behavior: scrollBehavior })
+    }
+    const delay = scrollBehavior === 'smooth' ? 500 : 50
+    setTimeout(() => {
+      clickLockRef.current = false
+    }, delay)
+  }
+
+  return (
+    <div id='proxio-catalog' className='flex flex-col gap-2'>
+      <header
+        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        className='cursor-pointer text-sm font-semibold text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'>
+        {locale.COMMON.TABLE_OF_CONTENTS}
+      </header>
+      <nav
+        ref={tRef}
+        className='flex-1 overflow-y-auto max-h-[calc(100vh-200px)] text-sm text-gray-500 dark:text-gray-400'>
+        {filteredToc.map((item, idx) => {
+          const id = uuidToId(item.id)
+          const isActive = activeSection === item.id
+          return (
+            <div
+              key={id + '-' + idx}
+              data-id={item.id}
+              onClick={() => scrollToSection(item)}
+              style={{ paddingLeft: `${(item.indentLevel - 1) * 12}px` }}
+              className={
+                'cursor-pointer truncate leading-7 transition-colors hover:text-gray-900 dark:hover:text-gray-100 ' +
+                (activeSection === id
+                  ? 'text-gray-900 dark:text-white font-semibold'
+                  : '')
+              }>
+              {item.text}
+            </div>
+          )
+        })}
+      </nav>
+    </div>
+  )
+}
+
+export default Catalog

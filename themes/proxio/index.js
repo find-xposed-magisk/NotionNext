@@ -24,6 +24,7 @@ import CONFIG from './config'
 import { Style } from './style'
 // import { MadeWithButton } from './components/MadeWithButton'
 import Comment from '@/components/Comment'
+import Catalog from './components/Catalog'
 import replaceSearchResult from '@/components/Mark'
 import ShareBar from '@/components/ShareBar'
 import DashboardBody from '@/components/ui/dashboard/DashboardBody'
@@ -183,6 +184,16 @@ const LayoutSlug = props => {
             <Banner title={post?.title} description={post?.summary} />
             <div className='container grow'>
                 <div className='flex flex-wrap justify-center -mx-4'>
+                    {/* 桌面端侧边栏目录（默认关闭，PROXIO_POST_CATALOG_ENABLE 开启） */}
+                    {siteConfig('PROXIO_POST_CATALOG_ENABLE', false, CONFIG) && post?.toc?.length > 0 && (
+                        <aside
+                            id='proxio-post-catalog'
+                            className='hidden xl:block xl:flex-shrink-0 xl:w-60 pt-20'>
+                            <div className='sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto'>
+                                <Catalog post={post} />
+                            </div>
+                        </aside>
+                    )}
                     <div id='container-inner' className='w-full p-4'>
                         {lock && <ArticleLock validPassword={validPassword} />}
 
