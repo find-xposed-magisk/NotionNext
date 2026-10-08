@@ -28,19 +28,24 @@ export default function MobileCatalog({ post }) {
 
   return (
     <div id='proxio-mobile-catalog'>
-      {/* 浮动入口按钮：位于回顶按钮上方，避免遮挡 */}
-      <button
-        type='button'
-        aria-label='Catalog'
-        onClick={() => setDrawerOpen(true)}
-        className='fixed bottom-32 right-8 z-[999] flex h-10 w-10 items-center justify-center rounded-md bg-primary text-white shadow-md transition duration-300 ease-in-out hover:bg-dark xl:hidden'>
-        <i className='fas fa-list-ol' />
-      </button>
+      {/* 浮动入口按钮：位于回顶按钮上方，避免遮挡；抽屉展开时隐藏以免与面板重叠 */}
+      {!drawerOpen && (
+        <button
+          type='button'
+          aria-label='Catalog'
+          onClick={() => setDrawerOpen(true)}
+          className='fixed bottom-32 right-8 z-[999] flex h-10 w-10 items-center justify-center rounded-md bg-primary text-white shadow-md transition duration-300 ease-in-out hover:bg-dark xl:hidden'>
+          <i className='fas fa-list-ol' />
+        </button>
+      )}
 
-      {/* 目录抽屉：右侧滑入，覆盖式不挤压正文 */}
+      {/* 目录抽屉：右侧滑入，覆盖式不挤压正文
+          关闭态需平移「自身宽度 + right-4 的 1rem 偏移」，否则屏幕右缘会残留一条白边 */}
       <div
         className={
-          (drawerOpen ? 'translate-x-0' : 'translate-x-full') +
+          (drawerOpen
+            ? 'translate-x-0'
+            : 'translate-x-[calc(100%+1rem)]') +
           ' fixed bottom-12 right-4 z-[999] w-60 rounded-xl bg-white py-2 shadow-md transition-transform duration-200 dark:bg-gray-900 xl:hidden'
         }>
         {post && (
