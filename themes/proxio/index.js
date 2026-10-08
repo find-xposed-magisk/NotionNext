@@ -184,17 +184,15 @@ const LayoutSlug = props => {
             <Banner title={post?.title} description={post?.summary} />
             <div className='container grow'>
                 <div className='flex flex-wrap justify-center -mx-4'>
-                    {/* 桌面端侧边栏目录（默认关闭，PROXIO_POST_CATALOG_ENABLE 开启） */}
-                    {siteConfig('PROXIO_POST_CATALOG_ENABLE', false, CONFIG) && post?.toc?.length > 0 && (
-                        <aside
-                            id='proxio-post-catalog'
-                            className='hidden xl:block xl:flex-shrink-0 xl:w-60 pt-20'>
-                            <div className='sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto'>
-                                <Catalog post={post} />
-                            </div>
-                        </aside>
-                    )}
-                    <div id='container-inner' className='w-full p-4'>
+                    <div
+                        id='container-inner'
+                        className='w-full p-4'
+                        style={
+                            siteConfig('PROXIO_POST_CATALOG_ENABLE', false, CONFIG) &&
+                            post?.toc?.length > 0
+                                ? { width: 'calc(100% - 16rem)' }
+                                : undefined
+                        }>
                         {lock && <ArticleLock validPassword={validPassword} />}
 
                         {!lock && post && (
@@ -205,6 +203,19 @@ const LayoutSlug = props => {
                             </div>
                         )}
                     </div>
+                    {/* 桌面端侧边栏目录（默认关闭，PROXIO_POST_CATALOG_ENABLE 开启；仅 xl 及以上显示） */}
+                    {siteConfig('PROXIO_POST_CATALOG_ENABLE', false, CONFIG) && post?.toc?.length > 0 && (
+                        <aside
+                            id='proxio-post-catalog'
+                            className='hidden xl:block xl:flex-shrink-0 xl:w-60 p-4'
+                            style={{ position: 'sticky', top: '6rem', alignSelf: 'flex-start' }}>
+                            <div
+                                className='max-h-[calc(100vh-8rem)] overflow-y-auto'
+                                style={{ position: 'relative' }}>
+                                <Catalog post={post} />
+                            </div>
+                        </aside>
+                    )}
                 </div>
             </div>
         </>
