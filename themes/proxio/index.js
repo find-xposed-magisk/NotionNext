@@ -25,6 +25,7 @@ import { Style } from './style'
 // import { MadeWithButton } from './components/MadeWithButton'
 import Comment from '@/components/Comment'
 import Catalog from './components/Catalog'
+import MobileCatalog from './components/MobileCatalog'
 import replaceSearchResult from '@/components/Mark'
 import ShareBar from '@/components/ShareBar'
 import DashboardBody from '@/components/ui/dashboard/DashboardBody'
@@ -218,6 +219,10 @@ const LayoutSlug = props => {
                     )}
                 </div>
             </div>
+            {/* 移动端悬浮目录入口（PROXIO_POST_CATALOG_ENABLE 开启时） */}
+            {siteConfig('PROXIO_POST_CATALOG_ENABLE', false, CONFIG) && (
+                <MobileCatalog post={post} />
+            )}
         </>
     )
 }
