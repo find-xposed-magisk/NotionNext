@@ -14,7 +14,7 @@ import CONFIG from '../config'
  * 3. 可配置 PROXIO_POST_CATALOG_SHOW_LEVEL3 控制是否显示第三级
  * 4. 点击目录标题回到文章顶部
  */
-const Catalog = ({ post }) => {
+const Catalog = ({ post, drawer = false }) => {
   const { locale } = useGlobal()
   const tRef = useRef(null)
   const clickLockRef = useRef(false)
@@ -116,14 +116,20 @@ const Catalog = ({ post }) => {
 
   return (
     <div id='proxio-catalog' className='flex flex-col gap-2'>
-      <header
-        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-        className='cursor-pointer text-sm font-semibold text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'>
-        {locale.COMMON.TABLE_OF_CONTENTS}
-      </header>
+      {/* 抽屉模式的标题由外层面板头渲染，桌面侧边栏保留标题 */}
+      {!drawer && (
+        <header
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          className='cursor-pointer text-sm font-semibold text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'>
+          {locale.COMMON.TABLE_OF_CONTENTS}
+        </header>
+      )}
       <nav
         ref={tRef}
-        className='flex-1 overflow-y-auto max-h-[calc(100vh-200px)] text-sm text-gray-500 dark:text-gray-400'>
+        className={
+          'flex-1 overflow-y-auto text-sm text-gray-500 dark:text-gray-400 ' +
+          (drawer ? 'max-h-none' : 'max-h-[calc(100vh-200px)]')
+        }>
         {filteredToc.map((item, idx) => {
           const id = uuidToId(item.id)
           const isActive = activeSection === item.id
@@ -131,12 +137,19 @@ const Catalog = ({ post }) => {
             <div
               key={id + '-' + idx}
               data-id={item.id}
-              onClick={() => scrollToSection(item)}
-              style={{ paddingLeft: `${(item.indentLevel - 1) * 12}px` }}
+              onClick={() => {
+                scrollToSection(item)
+                // 抽屉模式：跳转后自动收起
+                if (drawer) {
+                  const close = document.getElementById('proxio-mobile-catalog')
+                  if (close) close.dispatchEvent(new Event('proxio-catalog-close'))
+                }
+              }}
+              style={{ paddingLeft: drawer ? `${(item.indentLevel - 1) * 10 + 10}px` : `${(item.indentLevel - 1) * 12}px` }}
               className={
-                'cursor-pointer truncate leading-7 transition-colors hover:text-gray-900 dark:hover:text-gray-100 ' +
+                'cursor-pointer truncate rounded-md leading-7 transition-colors hover:text-gray-900 hover:bg-gray-50 dark:hover:text-gray-100 dark:hover:bg-gray-700 ' +
                 (activeSection === id
-                  ? 'text-gray-900 dark:text-white font-semibold'
+                  ? 'bg-primary/10 text-primary font-semibold dark:bg-primary/20 dark:text-blue-300'
                   : '')
               }>
               {item.text}
