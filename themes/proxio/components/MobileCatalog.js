@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Catalog from './Catalog'
 
 /**
@@ -12,6 +12,8 @@ import Catalog from './Catalog'
 export default function MobileCatalog({ post }) {
   const [showButton, setShowButton] = useState(false)
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const buttonRef = useRef(null)
+  const drawerRef = useRef(null)
 
   // 与主题既有浮动元素一致：滚动一段距离后才出现
   useEffect(() => {
@@ -21,11 +23,26 @@ export default function MobileCatalog({ post }) {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
+  /**
+   * 收起抽屉，并把焦点从正在卸载的抽屉内容交还入口按钮。
+   *
+   * 关闭态抽屉不挂载目录内容（其中的链接不会残留在 Tab 顺序与可访问性树中），
+   * 因此若收起时焦点仍在抽屉内（键盘 Enter 跳转、或点击条目后），
+   * 焦点会随内容卸载而丢失；这里显式移回可见的入口按钮。
+   */
+  const closeDrawer = () => {
+    const active = document.activeElement
+    if (drawerRef.current && active && drawerRef.current.contains(active)) {
+      buttonRef.current?.focus()
+    }
+    setDrawerOpen(false)
+  }
+
   // Catalog 在抽屉模式下点击条目跳转后，通过该事件让抽屉收起
   useEffect(() => {
     const el = document.getElementById('proxio-mobile-catalog')
     if (!el) return
-    const onClose = () => setDrawerOpen(false)
+    const onClose = () => closeDrawer()
     el.addEventListener('proxio-catalog-close', onClose)
     return () => el.removeEventListener('proxio-catalog-close', onClose)
   }, [showButton])
@@ -39,9 +56,11 @@ export default function MobileCatalog({ post }) {
     <div id='proxio-mobile-catalog'>
       {/* 浮动入口：样式与回顶按钮保持一致（方形圆角），抽屉展开时原位变为关闭按钮 */}
       <button
+        ref={buttonRef}
         type='button'
+        aria-expanded={drawerOpen}
         aria-label={drawerOpen ? 'Close catalog' : 'Open catalog'}
-        onClick={() => setDrawerOpen(!drawerOpen)}
+        onClick={() => (drawerOpen ? closeDrawer() : setDrawerOpen(true))}
         className='fixed bottom-28 right-8 z-[1000] flex h-10 w-10 items-center justify-center rounded-md bg-primary text-white shadow-md transition duration-300 ease-in-out hover:bg-dark xl:hidden'>
         <i
           className={
@@ -53,7 +72,7 @@ export default function MobileCatalog({ post }) {
 
       {/* 背景蒙版：淡入淡出 */}
       <div
-        onClick={() => setDrawerOpen(false)}
+        onClick={closeDrawer}
         className={
           'fixed top-0 left-0 z-[998] h-full w-full bg-black/30 backdrop-blur-[2px] transition-opacity duration-300 xl:hidden ' +
           (drawerOpen ? 'opacity-100' : 'pointer-events-none opacity-0')
@@ -64,6 +83,7 @@ export default function MobileCatalog({ post }) {
           关闭态需平移「自身宽度 + 右偏移」，否则屏幕右缘会残留一条白边；
           底边留在浮动按钮上方，避免两者重叠 */}
       <div
+        ref={drawerRef}
         className={
           (drawerOpen ? 'translate-x-0' : 'translate-x-[calc(100%+1.5rem)]') +
           ' fixed bottom-[10.5rem] right-6 z-[999] w-64 rounded-2xl border border-gray-100 bg-white shadow-2xl transition-transform duration-300 ease-out dark:border-gray-700 dark:bg-gray-800 xl:hidden'
@@ -76,9 +96,11 @@ export default function MobileCatalog({ post }) {
           </span>
           <span className='text-xs text-gray-400'>{post?.toc?.length || 0} 节</span>
         </div>
-        {/* 目录项：左右内边距，不贴边 */}
+        {/* 目录项：左右内边距，不贴边。
+            关闭态整块不挂载：光靠 translate 移出视口，内部链接仍留在
+            Tab 顺序与可访问性树中，键盘用户会聚焦到屏幕外的不可见控件 */}
         <div className='max-h-[50vh] overflow-y-auto px-2 py-2'>
-          <Catalog post={post} drawer />
+          {drawerOpen && <Catalog post={post} drawer />}
         </div>
       </div>
     </div>
