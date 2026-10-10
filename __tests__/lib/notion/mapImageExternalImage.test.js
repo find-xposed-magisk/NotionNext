@@ -3,6 +3,7 @@
  */
 
 import { mapImgUrl } from '@/lib/db/notion/mapImage'
+import { siteConfig } from '@/lib/config'
 import BLOG from '@/blog.config'
 
 // issue 作者站点上被 Referer 防盗链拒绝的 smzdm 外链图
@@ -84,5 +85,62 @@ describe('mapImgUrl 外链图片', () => {
     const ret = mapImgUrl(hotlinkBlockedUrl, block, 'block', false)
 
     expect(ret).toContain('t=block-id-5')
+  })
+
+  describe('外链压缩参数（回归：代理前需先做源站压缩）', () => {
+    const unsplashUrl = 'https://images.unsplash.com/photo-1234567890'
+
+    it('Unsplash 外链 + block_width 走中转后仍保留 width/q/fmt 参数', () => {
+      const block = {
+        type: 'image',
+        id: 'unsplash-1',
+        format: { block_width: 800 }
+      }
+      const ret = mapImgUrl(unsplashUrl, block, 'block', true)
+
+      // 仍走防盗链中转
+      expect(ret).toContain(`${BLOG.NOTION_HOST}/image/`)
+      // 被编码进代理地址的源 URL 必须带上压缩参数，否则图片不再被压缩
+      const encoded = ret.split('/image/')[1].split('?')[0]
+      const source = decodeURIComponent(encoded)
+      expect(source).toContain('width=800')
+      expect(source).toContain('q=50')
+      expect(source).toContain('fmt=webp')
+      expect(source).toContain('fm=webp')
+    })
+
+    it('没有 block_width 时使用配置的默认压缩宽度', () => {
+      const block = { type: 'image', id: 'unsplash-2' }
+      const ret = mapImgUrl(unsplashUrl, block, 'block', true)
+
+      const source = decodeURIComponent(ret.split('/image/')[1].split('?')[0])
+      expect(source).toContain(`width=${siteConfig('IMAGE_COMPRESS_WIDTH')}`)
+    })
+
+    it('非 Unsplash 外链的中转行为不受影响', () => {
+      const block = {
+        type: 'image',
+        id: 'smzdm-1',
+        format: { block_width: 800 }
+      }
+      const ret = mapImgUrl(hotlinkBlockedUrl, block, 'block', true)
+
+      expect(ret).toContain(`${BLOG.NOTION_HOST}/image/`)
+      // 非 Unsplash 源站没有已知的压缩参数约定，源 URL 应保持原样
+      const source = decodeURIComponent(ret.split('/image/')[1].split('?')[0])
+      expect(source).toBe(hotlinkBlockedUrl)
+    })
+
+    it('needCompress=false 时不追加压缩参数', () => {
+      const block = {
+        type: 'image',
+        id: 'unsplash-3',
+        format: { block_width: 800 }
+      }
+      const ret = mapImgUrl(unsplashUrl, block, 'block', false)
+
+      const source = decodeURIComponent(ret.split('/image/')[1].split('?')[0])
+      expect(source).not.toContain('width=800')
+    })
   })
 })
