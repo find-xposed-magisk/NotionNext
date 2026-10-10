@@ -42,17 +42,31 @@ const Catalog = ({ post, drawer = false }) => {
   useEffect(() => {
     if (!post || !filteredToc || filteredToc.length < 1) return
 
+    // 只在「已显示目录项」对应的标题中选当前项：目录里被过滤掉的
+    // 三级标题不应成为高亮目标，否则滚到 L3 时高亮会消失
+    const visibleIds = new Set(filteredToc.map(t => uuidToId(t.id)))
+    const getVisibleHeadings = () => {
+      const all = document.getElementsByClassName('notion-h')
+      const visible = []
+      for (const section of all) {
+        if (!section || !(section instanceof Element)) continue
+        if (visibleIds.has(section.getAttribute('data-id'))) {
+          visible.push(section)
+        }
+      }
+      return visible
+    }
+
     const throttleMs = 200
     const actionSectionScrollSpy = throttle(() => {
       if (clickLockRef.current) return
-      const sections = document.getElementsByClassName('notion-h')
+      const sections = getVisibleHeadings()
       if (!sections || sections.length === 0) return
 
       let prevBBox = null
       let currentSectionId = null
       for (let i = 0; i < sections.length; ++i) {
         const section = sections[i]
-        if (!section || !(section instanceof Element)) continue
         const bbox = section.getBoundingClientRect()
         const prevHeight = prevBBox ? bbox.top - prevBBox.bottom : 0
         const offset = Math.max(150, prevHeight / 4)
