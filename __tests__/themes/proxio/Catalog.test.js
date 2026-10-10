@@ -134,3 +134,71 @@ describe('Catalog 滚动高亮（SHOW_LEVEL3 默认关闭）', () => {
     expect(active.textContent).toBe('第一章')
   })
 })
+
+describe('Catalog 键盘可访问性', () => {
+  beforeAll(() => {
+    window.scrollTo = () => {}
+    Element.prototype.scrollTo = () => {}
+    Element.prototype.scrollIntoView = () => {}
+  })
+  beforeEach(() => {
+    siteConfig.mockReset()
+    siteConfig.mockImplementation((key, defaultVal) => {
+      if (key === 'PROXIO_POST_CATALOG_SHOW_LEVEL3') return false
+      if (key === 'PROXIO_POST_CATALOG_SCROLL_BEHAVIOR') return 'instant'
+      return defaultVal
+    })
+    document.body.innerHTML = ''
+  })
+
+  it('目录条目是原生链接：可 Tab 聚焦、href 指向标题锚点、Enter 触发跳转', () => {
+    const { container } = render(<Catalog post={post} />)
+    mountHeadings()
+    const links = container.querySelectorAll('nav a')
+
+    // 每个条目都可聚焦且带锚点 href
+    expect(links.length).toBe(2)
+    links.forEach(link => {
+      expect(link.tagName).toBe('A')
+      expect(link.getAttribute('href')).toMatch(/^#[0-9a-zA-Z]{8}$/)
+      expect(link.className).toContain('focus-visible:ring')
+    })
+
+    // Enter（click 事件）触发滚动到对应标题
+    const target = document.querySelector(
+      `[data-id="${links[1].getAttribute('href').slice(1)}"]`
+    )
+    expect(target).not.toBeNull()
+    const scrollIntoView = jest.spyOn(target, 'scrollIntoView')
+    links[1].click()
+    expect(scrollIntoView).toHaveBeenCalled()
+  })
+
+  it('目录标题是原生按钮，可聚焦并回顶', () => {
+    const { container } = render(<Catalog post={post} />)
+    const header = container.querySelector('#proxio-catalog > button')
+    expect(header).not.toBeNull()
+    expect(header.className).toContain('focus-visible:ring')
+
+    const scrollTop = jest.spyOn(window, 'scrollTo')
+    header.click()
+    expect(scrollTop).toHaveBeenCalled()
+  })
+
+  it('抽屉模式点击条目后发出关闭事件', () => {
+    const { container } = render(<Catalog post={post} drawer />)
+    const link = container.querySelector('nav a')
+    const fired = jest.fn()
+    document.getElementById('proxio-mobile-catalog')
+      ?.addEventListener('proxio-catalog-close', fired)
+    // 挂一个监听容器（MobileCatalog 实际挂载点）
+    const mount = document.createElement('div')
+    mount.id = 'proxio-mobile-catalog'
+    document.body.appendChild(mount)
+    mount.addEventListener('proxio-catalog-close', fired)
+
+    link.click()
+    expect(fired).toHaveBeenCalled()
+    mount.remove()
+  })
+})

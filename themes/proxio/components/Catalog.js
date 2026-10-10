@@ -132,26 +132,31 @@ const Catalog = ({ post, drawer = false }) => {
     <div id='proxio-catalog' className='flex flex-col gap-2'>
       {/* 抽屉模式的标题由外层面板头渲染，桌面侧边栏保留标题 */}
       {!drawer && (
-        <header
+        <button
+          type='button'
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          className='cursor-pointer text-sm font-semibold text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'>
+          className='cursor-pointer rounded-md text-left text-sm font-semibold text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'>
           {locale.COMMON.TABLE_OF_CONTENTS}
-        </header>
+        </button>
       )}
       <nav
         ref={tRef}
+        aria-label={locale.COMMON.TABLE_OF_CONTENTS}
         className={
           'flex-1 overflow-y-auto text-sm text-gray-500 dark:text-gray-400 ' +
           (drawer ? 'max-h-none' : 'max-h-[calc(100vh-200px)]')
         }>
         {filteredToc.map((item, idx) => {
           const id = uuidToId(item.id)
-          const isActive = activeSection === item.id
+          const isActive = activeSection === id
           return (
-            <div
+            <a
               key={id + '-' + idx}
+              href={`#${id}`}
               data-id={item.id}
-              onClick={() => {
+              onClick={event => {
+                // 原生锚点跳转会整页 hash 导航，改为平滑滚动并接管高亮
+                event.preventDefault()
                 scrollToSection(item)
                 // 抽屉模式：跳转后自动收起
                 if (drawer) {
@@ -161,13 +166,13 @@ const Catalog = ({ post, drawer = false }) => {
               }}
               style={{ paddingLeft: drawer ? `${(item.indentLevel - 1) * 10 + 10}px` : `${(item.indentLevel - 1) * 12}px` }}
               className={
-                'cursor-pointer truncate rounded-md leading-7 transition-colors hover:text-gray-900 hover:bg-gray-50 dark:hover:text-gray-100 dark:hover:bg-gray-700 ' +
-                (activeSection === id
+                'block cursor-pointer truncate rounded-md leading-7 transition-colors hover:text-gray-900 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary dark:hover:text-gray-100 dark:hover:bg-gray-700 ' +
+                (isActive
                   ? 'bg-primary/10 text-primary font-semibold dark:bg-primary/20 dark:text-blue-300'
                   : '')
               }>
               {item.text}
-            </div>
+            </a>
           )
         })}
       </nav>
